@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/coreos/dex/connector"
-	"github.com/sirupsen/logrus"
+	"github.com/dexidp/dex/connector"
+	"github.com/dexidp/dex/pkg/log"
 )
 
 const (
@@ -38,7 +38,7 @@ type Config struct {
 }
 
 // Open returns a strategy for logging in through Microsoft.
-func (c *Config) Open(id string, logger logrus.FieldLogger) (connector.Connector, error) {
+func (c *Config) Open(id string, logger log.Logger) (connector.Connector, error) {
 	m := microsoftConnector{
 		redirectURI:        c.RedirectURI,
 		clientID:           c.ClientID,
@@ -75,7 +75,7 @@ type microsoftConnector struct {
 	tenant             string
 	onlySecurityGroups bool
 	groups             []string
-	logger             logrus.FieldLogger
+	logger             log.Logger
 }
 
 func (c *microsoftConnector) isOrgTenant() bool {
@@ -91,7 +91,9 @@ func (c *microsoftConnector) oauth2Config(scopes connector.Scopes) *oauth2.Confi
 	if c.groupsRequired(scopes.Groups) {
 		microsoftScopes = append(microsoftScopes, scopeGroups)
 	}
-
+	if scopes.OfflineAccess {
+		microsoftScopes = append(microsoftScopes, "offline_access")
+	}
 	return &oauth2.Config{
 		ClientID:     c.clientID,
 		ClientSecret: c.clientSecret,

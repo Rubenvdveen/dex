@@ -21,9 +21,9 @@ import (
 
 	jose "gopkg.in/square/go-jose.v2"
 
-	"github.com/coreos/dex/connector"
-	"github.com/coreos/dex/server/internal"
-	"github.com/coreos/dex/storage"
+	"github.com/dexidp/dex/connector"
+	"github.com/dexidp/dex/server/internal"
+	"github.com/dexidp/dex/storage"
 )
 
 // TODO(ericchiang): clean this file up and figure out more idiomatic error handling.
@@ -150,7 +150,7 @@ func signatureAlgorithm(jwk *jose.JSONWebKey) (alg jose.SignatureAlgorithm, err 
 		// value. In the future, we might want to make this configurable on a
 		// per client basis. For example allowing PS256 or ECDSA variants.
 		//
-		// See https://github.com/coreos/dex/issues/692
+		// See https://github.com/dexidp/dex/issues/692
 		return jose.RS256, nil
 	case *ecdsa.PrivateKey:
 		// We don't actually support ECDSA keys yet, but they're tested for
@@ -187,7 +187,7 @@ func signPayload(key *jose.JSONWebKey, alg jose.SignatureAlgorithm, payload []by
 	return signature.CompactSerialize()
 }
 
-// The hash algorithm for the at_hash is detemrined by the signing
+// The hash algorithm for the at_hash is determined by the signing
 // algorithm used for the id_token. From the spec:
 //
 //    ...the hash algorithm used is the hash algorithm used in the alg Header
@@ -534,12 +534,15 @@ func (s *Server) validateCrossClientTrust(clientID, peerID string) (trusted bool
 }
 
 func validateRedirectURI(client storage.Client, redirectURI string) bool {
-	if !client.Public {
-		for _, uri := range client.RedirectURIs {
-			if redirectURI == uri {
-				return true
-			}
+
+	for _, uri := range client.RedirectURIs {
+		if redirectURI == uri {
+			return true
 		}
+	}
+
+	// If no redirect url matches for non-public client the redirect url is not valid
+	if !client.Public {
 		return false
 	}
 
